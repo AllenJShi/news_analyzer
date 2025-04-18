@@ -32,7 +32,7 @@ class NewsStorage:
             
         # 如果仍然不存在，尝试使用 C:\Users\Administrator\Desktop\news_analyzer\data
         if not os.path.exists(self.data_dir):
-            self.data_dir = r"C:\Users\Administrator\Desktop\news_analyzer\data"
+            os.makedirs(self.data_dir, exist_ok=True)
         
         # 确保目录存在
         self._ensure_dir(self.data_dir)
