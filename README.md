@@ -35,4 +35,4 @@ This open-source project I’m releasing is mainly for news statistics. It can s
 5.  **Run the application:**
     ```bash
     python main.py
-    
+    ```
