@@ -12,7 +12,13 @@ import os
 import logging
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt  # Import Qt
 from dotenv import load_dotenv  # Import load_dotenv
+
+# Enable High DPI Scaling
+QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True) 
+# Optional: Use high-resolution icons
+# QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -71,6 +77,11 @@ def main():
         # 创建Qt应用程序
         app = QApplication(sys.argv)
         app.setApplicationName("新闻聚合与分析系统")
+        
+        # Set default font size (optional, adjust as needed)
+        # font = app.font()
+        # font.setPointSize(10) # Example: Set default point size to 10
+        # app.setFont(font)
         
         # 创建并显示主窗口
         main_window = MainWindow(storage, rss_collector)
