@@ -51,7 +51,7 @@ class LLMClient:
     def _determine_api_type(self):
         """确定API类型"""
         url_lower = self.api_url.lower()
-        if "openai.com" in url_lower:
+        if ("openai.com" in url_lower) or ("googleapis.com" in url_lower):
             return "openai"
         elif "anthropic.com" in url_lower:
             return "anthropic"

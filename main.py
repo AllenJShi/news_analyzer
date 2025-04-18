@@ -12,6 +12,10 @@ import os
 import logging
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtGui import QIcon
+from dotenv import load_dotenv  # Import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # 确保项目根目录在Python路径中
 project_root = os.path.dirname(os.path.abspath(__file__))
