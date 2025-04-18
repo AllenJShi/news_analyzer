@@ -50,7 +50,7 @@ class HistoryPanel(QWidget):
         )
         if not os.path.exists(self.news_dir):
             # 备选路径 - 直接使用绝对路径
-            self.news_dir = r"C:\Users\Administrator\Desktop\news_analyzer\data\news"
+            self.news_dir = "./data/news"
             if not os.path.exists(self.news_dir):
                 # 如果仍不存在，创建该目录
                 try:
