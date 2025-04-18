@@ -97,10 +97,13 @@ class MainWindow(QMainWindow):
         # 创建共享的LLM客户端实例
         self.llm_client = LLMClient()
         
-        # 初始化UI组件
+        # 初始化UI组件 (Needs to be done before loading initial news)
         self._init_ui()
+
+        # 加载初始新闻数据 (Load history after UI is initialized)
+        self._load_initial_news()
         
-        # 加载用户设置
+        # 加载用户设置 (Window geometry, user sources)
         self._load_settings()
         
         # 同步预设分类到侧边栏
@@ -233,6 +236,28 @@ class MainWindow(QMainWindow):
         self._create_menus()
         self._create_toolbars()
         self._create_statusbar()
+    
+    def _load_initial_news(self):
+        """尝试从存储加载初始新闻数据并更新UI"""
+        try:
+            loaded_news = self.storage.load_news()
+            if loaded_news:
+                self.logger.info(f"从存储加载了 {len(loaded_news)} 条历史新闻")
+                # 更新收集器的缓存
+                self.rss_collector.news_cache = loaded_news
+                # 更新新闻列表UI
+                self.news_list.update_news(loaded_news)
+                # 更新聊天面板的可用新闻标题
+                self._update_chat_panel_news(loaded_news)
+                # 更新状态栏
+                self.status_label.setText(f"已加载 {len(loaded_news)} 条历史新闻")
+            else:
+                self.logger.info("未找到历史新闻或加载失败")
+                self.status_label.setText("未加载历史新闻")
+        except Exception as e:
+            self.logger.error(f"加载初始新闻时出错: {str(e)}", exc_info=True)
+            QMessageBox.warning(self, "加载历史失败", f"无法加载历史新闻: {str(e)}")
+            self.status_label.setText("加载历史新闻失败")
     
     def _update_chat_panel_news(self, news_items):
         """更新聊天面板中的可用新闻标题"""
