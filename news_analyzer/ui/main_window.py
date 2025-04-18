@@ -28,7 +28,7 @@ from PyQt5.QtWidgets import (
     QFormLayout,
     QTabWidget,
 )
-from PyQt5.QtCore import Qt, QSize, QSettings, QTimer
+from PyQt5.QtCore import Qt, QSize, QSettings, QTimer, pyqtSignal
 from PyQt5.QtGui import QIcon
 
 from news_analyzer.ui.sidebar import CategorySidebar
@@ -92,6 +92,10 @@ class AddSourceDialog(QDialog):
 class MainWindow(QMainWindow):
     """应用程序主窗口类"""
 
+    # Define signals for thread communication
+    news_refreshed = pyqtSignal(list, int)  # news_items, count
+    refresh_failed = pyqtSignal(str)       # error_message
+
     def __init__(self, storage, rss_collector=None):
         super().__init__()
 
@@ -125,6 +129,13 @@ class MainWindow(QMainWindow):
 
         # 更新状态栏显示模型状态
         self._update_status_message()
+
+        # Initialize refresh flag
+        self.is_refreshing = False
+
+        # Connect signals to slots
+        self.news_refreshed.connect(self._handle_refresh_success)
+        self.refresh_failed.connect(self._handle_refresh_failure)
 
         self.logger.info("主窗口已初始化")
 
@@ -467,39 +478,79 @@ class MainWindow(QMainWindow):
                 self.logger.error(f"添加新闻源失败: {str(e)}")
 
     def refresh_news(self, source_url=None):
-        """刷新新闻
+        """启动后台线程刷新新闻
 
         Args:
             source_url: 可选，特定源的URL
         """
-        self.status_label.setText("正在获取新闻...")
+        if self.is_refreshing:
+            self.logger.warning("已经在刷新新闻，请稍候...")
+            self.status_label.setText("正在刷新中，请稍候...")
+            return
 
+        self.is_refreshing = True
+        self.refresh_action.setEnabled(False)  # Disable button
+        self.status_label.setText("正在获取新闻...")
+        self.logger.info(f"开始刷新新闻 (Source: {source_url or 'All'})")
+
+        # Create and start the background thread
+        thread = threading.Thread(target=self._worker_refresh_news, args=(source_url,))
+        thread.daemon = True  # Allow application to exit even if thread is running
+        thread.start()
+
+    def _worker_refresh_news(self, source_url):
+        """在后台线程中执行新闻获取逻辑"""
         try:
             if source_url:
                 # 刷新特定源
                 news_items = self.rss_collector.fetch_from_source(source_url)
                 count = len(news_items)
-                self.status_label.setText(f"已获取 {count} 条新闻")
             else:
                 # 刷新所有源
                 news_items = self.rss_collector.fetch_all()
                 count = len(news_items)
-                self.status_label.setText(f"已获取 {count} 条新闻")
 
-            # 更新新闻列表
-            self.news_list.update_news(news_items)
+            # Emit success signal with results
+            self.news_refreshed.emit(news_items, count)
 
-            # 更新聊天面板的可用新闻
-            self.chat_panel.set_available_news_titles(news_items)
-
-            # 保存到存储
-            self.storage.save_news(news_items)
-
-            self.logger.info(f"已刷新新闻，获取了 {count} 条")
         except Exception as e:
-            QMessageBox.warning(self, "刷新失败", f"获取新闻失败: {str(e)}")
-            self.status_label.setText("刷新失败")
-            self.logger.error(f"刷新新闻失败: {str(e)}")
+            error_message = f"获取新闻失败: {str(e)}"
+            self.logger.error(f"后台刷新新闻失败: {str(e)}", exc_info=True)
+            # Emit failure signal with error message
+            self.refresh_failed.emit(error_message)
+
+    def _handle_refresh_success(self, news_items, count):
+        """处理新闻刷新成功 (在主线程中执行)"""
+        self.logger.info(f"后台刷新成功，获取了 {count} 条新闻")
+        self.status_label.setText(f"已获取 {count} 条新闻")
+
+        # 更新新闻列表
+        self.news_list.update_news(news_items)
+
+        # 更新聊天面板的可用新闻
+        self.chat_panel.set_available_news_titles(news_items)
+
+        # 保存到存储 (可以在这里执行，或者如果保存也耗时，可以考虑异步保存)
+        try:
+            self.storage.save_news(news_items)
+            self.logger.info("刷新后的新闻已保存到存储")
+        except Exception as e:
+            self.logger.error(f"保存刷新后的新闻失败: {str(e)}", exc_info=True)
+            QMessageBox.warning(self, "保存失败", f"无法保存刷新后的新闻: {str(e)}")
+
+        # Re-enable button and reset flag
+        self.refresh_action.setEnabled(True)
+        self.is_refreshing = False
+
+    def _handle_refresh_failure(self, error_message):
+        """处理新闻刷新失败 (在主线程中执行)"""
+        self.logger.error(f"处理刷新失败信号: {error_message}")
+        QMessageBox.warning(self, "刷新失败", error_message)
+        self.status_label.setText("刷新失败")
+
+        # Re-enable button and reset flag
+        self.refresh_action.setEnabled(True)
+        self.is_refreshing = False
 
     def search_news(self, query):
         """搜索新闻
