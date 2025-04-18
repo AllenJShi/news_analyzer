@@ -16,7 +16,7 @@ from PyQt5.QtCore import Qt  # Import Qt
 from dotenv import load_dotenv  # Import load_dotenv
 
 # Enable High DPI Scaling
-QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True) 
+QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 # Optional: Use high-resolution icons
 # QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
 
@@ -37,24 +37,24 @@ from news_analyzer.collectors.default_sources import initialize_sources
 
 def setup_logging():
     """设置日志记录"""
-    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs")
     os.makedirs(log_dir, exist_ok=True)
-    
-    log_file = os.path.join(log_dir, 'news_analyzer.log')
-    
+
+    log_file = os.path.join(log_dir, "news_analyzer.log")
+
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.FileHandler(log_file, encoding='utf-8'),
-            logging.StreamHandler()
-        ]
+            logging.FileHandler(log_file, encoding="utf-8"),
+            logging.StreamHandler(),
+        ],
     )
-    
+
     # 创建根日志记录器
-    logger = logging.getLogger('news_analyzer')
-    logger.info('新闻聚合与分析系统启动')
-    
+    logger = logging.getLogger("news_analyzer")
+    logger.info("新闻聚合与分析系统启动")
+
     return logger
 
 
@@ -62,34 +62,34 @@ def main():
     """主函数，初始化和启动应用程序"""
     # 设置日志记录
     logger = setup_logging()
-    
+
     try:
         # 初始化数据存储
         storage = NewsStorage()
-        
+
         # 初始化RSS收集器
         rss_collector = RSSCollector()
-        
+
         # 添加预设新闻源
         sources_count = initialize_sources(rss_collector)
         logger.info(f"已初始化 {sources_count} 个预设新闻源")
-        
+
         # 创建Qt应用程序
         app = QApplication(sys.argv)
         app.setApplicationName("新闻聚合与分析系统")
-        
+
         # Set default font size (optional, adjust as needed)
         # font = app.font()
         # font.setPointSize(10) # Example: Set default point size to 10
         # app.setFont(font)
-        
+
         # 创建并显示主窗口
         main_window = MainWindow(storage, rss_collector)
         main_window.show()
-        
+
         # 执行应用程序事件循环
         sys.exit(app.exec_())
-        
+
     except Exception as e:
         logger.error(f"应用程序启动失败: {str(e)}", exc_info=True)
         print(f"错误: 应用程序启动失败 - {str(e)}")

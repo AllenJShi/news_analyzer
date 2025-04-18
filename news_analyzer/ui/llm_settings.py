@@ -328,7 +328,9 @@ class LLMSettingsDialog(QDialog):
         }
 
     def _use_gemini_preset(self):
-        self.api_url.setText("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions")
+        self.api_url.setText(
+            "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+        )
         self.model_name.setText("gemini-2.0-flash")
         self.system_prompt.setText(
             "你是一个专业的新闻分析助手，可以提供客观、全面的新闻分析和解读。"
